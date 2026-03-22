@@ -1,0 +1,200 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, email, displayName, role, tenantId, avatarUrl
+    //
+    // Collection: projects
+    // Fields: id, name, courseId, description, duration, acceptanceCriteria, steps
+    //
+    // Collection: practice_sessions
+    // Fields: id, studentId, projectId, status, startTime, endTime, stepProgress, totalScore
+    //
+    // Collection: knowledge_nodes
+    // Fields: id, courseId, name, description, prerequisites, masteryThreshold, competenceIds
+    //
+    // Collection: questions
+    // Fields: id, nodeId, type, difficulty, content, options, answer, explanation
+    //
+    // Collection: memories
+    // Fields: studentId, sectionA, sectionB, sectionC, sectionD, sectionF, version
+    //
+    // Collection: conversations
+    // Fields: id, studentId, sceneMode, status
+    //
+    // Collection: messages
+    // Fields: sessionId, role, content, metadata, createdAt
+    //
+    // Collection: classes
+    // Fields: id, name, teacherId, studentIds, courseId
+    //
+    // Collection: courses
+    // Fields: id, name, description, teacherId
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "huizhiruronoy@gmail.com" && request.auth.token.email_verified == true ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    function isTeacher() {
+      return isAuthenticated() &&
+        (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher');
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return data.uid is string && data.email is string && isValidEmail(data.email) &&
+             data.role in ['student', 'teacher', 'admin'];
+    }
+
+    function isValidProject(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.courseId is string;
+    }
+
+    function isValidSession(data) {
+      return data.studentId is string && data.projectId is string &&
+             data.status in ['active', 'completed', 'graded'];
+    }
+
+    function isValidMemory(data) {
+      return data.studentId is string && data.version is int;
+    }
+
+    function isValidClass(data) {
+      return data.id is string && data.name is string && data.teacherId is string && data.courseId is string && data.studentIds is list;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /practice_sessions/{sessionId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow create: if isAuthenticated() && isValidSession(request.resource.data) && isOwner(request.resource.data.studentId);
+      allow update: if isAuthenticated() && isValidSession(request.resource.data) && (isOwner(resource.data.studentId) || isTeacher());
+      allow delete: if isTeacher();
+    }
+
+    match /knowledge_nodes/{nodeId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /questions/{questionId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /memories/{memoryId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow create, update: if isAuthenticated() && isValidMemory(request.resource.data) && (isOwner(request.resource.data.studentId) || isTeacher());
+      allow delete: if isTeacher();
+    }
+
+    match /conversations/{convId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.studentId);
+      allow update: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow delete: if isTeacher();
+    }
+
+    match /competence_points/{pointId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /answer_records/{recordId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.studentId);
+    }
+
+    match /messages/{msgId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+    }
+
+    match /competence_records/{recordId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow create, update: if isTeacher();
+    }
+
+    match /notifications/{notifId} {
+      allow read: if isTeacher();
+      allow create: if isAuthenticated(); // AI (via client) creates these
+      allow update: if isTeacher();
+    }
+
+    match /alert_records/{alertId} {
+      allow read: if isTeacher();
+      allow create: if isAuthenticated();
+      allow update, delete: if isTeacher();
+    }
+
+    match /competency_snapshots/{snapId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.studentId) || isTeacher());
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /classes/{classId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher();
+
+      match /{allSubcollections=**} {
+        allow read: if isAuthenticated();
+        allow write: if isTeacher();
+      }
+    }
+
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

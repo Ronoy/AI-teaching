@@ -1,0 +1,5 @@
+{
+  "name": "AI-Enhanced Learning Platform",
+  "description": "A comprehensive learning and practice platform featuring AI-driven adaptive theory, real-time practice tracking, and competence analytics.",
+  "requestFramePermissions": ["camera"]
+}

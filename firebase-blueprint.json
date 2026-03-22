@@ -1,0 +1,203 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for students and teachers",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "tenantId": { "type": "string" },
+        "avatarUrl": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "PracticeProject": {
+      "title": "Practice Project",
+      "description": "Definition of a practical training project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "courseId": { "type": "string" },
+        "description": { "type": "string" },
+        "duration": { "type": "integer", "description": "Estimated duration in minutes" },
+        "acceptanceCriteria": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "ProjectStep" }
+        }
+      },
+      "required": ["name", "courseId"]
+    },
+    "ProjectStep": {
+      "title": "Project Step",
+      "description": "A single step in a practice project",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "order": { "type": "integer" },
+        "type": { "type": "string", "enum": ["standardized", "open"] },
+        "estimatedTime": { "type": "integer" },
+        "checkItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "weight": { "type": "integer" },
+              "isCritical": { "type": "boolean" }
+            }
+          }
+        },
+        "maxScore": { "type": "integer" },
+        "competenceMapping": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "competenceId": { "type": "string" },
+              "confidence": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "PracticeSession": {
+      "title": "Practice Session",
+      "description": "A student's active practice session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed", "graded"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "stepProgress": {
+          "type": "object",
+          "description": "Map of step index to step data (startTime, endTime, submissionUrl, feedback)"
+        },
+        "totalScore": { "type": "number" }
+      }
+    },
+    "KnowledgeNode": {
+      "title": "Knowledge Node",
+      "description": "A node in the knowledge graph",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "courseId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "prerequisites": { "type": "array", "items": { "type": "string" } },
+        "masteryThreshold": { "type": "number" },
+        "competenceIds": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Question": {
+      "title": "Question",
+      "description": "A question in the theory question pool",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nodeId": { "type": "string" },
+        "type": { "type": "string", "enum": ["choice", "boolean", "fill", "short"] },
+        "difficulty": { "type": "integer", "enum": [1, 2, 3] },
+        "content": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "answer": { "type": "string" },
+        "explanation": { "type": "string" }
+      }
+    },
+    "StudentMemory": {
+      "title": "Student Memory",
+      "description": "The 5-zone memory system for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "sectionA": { "type": "string", "description": "Competence status" },
+        "sectionB": { "type": "string", "description": "Learning features (JSON tags)" },
+        "sectionC": { "type": "string", "description": "Recent dynamics" },
+        "sectionD": { "type": "string", "description": "AI guidance strategies" },
+        "sectionF": { "type": "string", "description": "Historical summary" },
+        "version": { "type": "integer" }
+      }
+    },
+    "ConversationSession": {
+      "title": "Conversation Session",
+      "description": "AI chat session context",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "sceneMode": { "type": "string", "enum": ["coach", "mentor", "observer", "assistant"] },
+        "status": { "type": "string", "enum": ["active", "paused", "ended", "escalated"] }
+      }
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Teacher notifications for student status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "type": { "type": "string", "enum": ["escalation", "warning"] },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["unread", "read", "processed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "sessionId": { "type": "string" }
+      },
+      "required": ["studentId", "type", "reason", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "projects": {
+      "schema": "PracticeProject",
+      "description": "Practice project definitions"
+    },
+    "practice_sessions": {
+      "schema": "PracticeSession",
+      "description": "Student practice sessions"
+    },
+    "knowledge_nodes": {
+      "schema": "KnowledgeNode",
+      "description": "Knowledge graph nodes"
+    },
+    "questions": {
+      "schema": "Question",
+      "description": "Question pool"
+    },
+    "memories": {
+      "schema": "StudentMemory",
+      "description": "Student memory records"
+    },
+    "conversations": {
+      "schema": "ConversationSession",
+      "description": "AI conversation sessions"
+    },
+    "messages": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "sessionId": { "type": "string" },
+          "role": { "type": "string", "enum": ["ai", "student", "teacher_silent", "teacher_visible", "system"] },
+          "content": { "type": "string" },
+          "metadata": { "type": "object" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "description": "Conversation messages"
+    },
+    "notifications": {
+      "schema": "Notification",
+      "description": "Teacher alerts and notifications"
+    }
+  }
+}
