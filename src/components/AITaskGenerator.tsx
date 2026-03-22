@@ -133,9 +133,34 @@ export default function AITaskGenerator({ courseId, onClose, onGenerated }: AITa
       }`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: `大纲内容：\n${userOutline}`,
-        config: { systemInstruction, responseMimeType: "application/json" }
+        config: { 
+          systemInstruction, 
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              code: { type: Type.STRING },
+              college: { type: Type.STRING },
+              description: { type: Type.STRING },
+              projects: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    name: { type: Type.STRING },
+                    description: { type: Type.STRING }
+                  },
+                  required: ["id", "name", "description"]
+                }
+              }
+            },
+            required: ["name", "code", "college", "description", "projects"]
+          }
+        }
       });
 
       const result = JSON.parse(response.text);
@@ -163,7 +188,7 @@ export default function AITaskGenerator({ courseId, onClose, onGenerated }: AITa
       请基于当前项目内容，返回完整的 JSON，包含原有的信息并补充 jobTitle, typicalJobTask 和 jobCompetencies。`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: JSON.stringify(generatedCourse),
         config: { 
           systemInstruction, 
@@ -200,7 +225,7 @@ export default function AITaskGenerator({ courseId, onClose, onGenerated }: AITa
       请返回完整的 JSON，保持与输入相同的 projects 和 tasks 结构，但只包含 tasks 的 steps、type 和 learningActivities 字段，不要返回其他无关字段以节省长度。`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: JSON.stringify(generatedCourse),
         config: { systemInstruction, responseMimeType: "application/json", thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
       });
@@ -263,7 +288,7 @@ export default function AITaskGenerator({ courseId, onClose, onGenerated }: AITa
       请返回完整的 JSON，保持与输入相同的 projects、tasks 和 steps 结构，但只包含 steps 的 resources、knowledgePoints 和 skills 字段，不要返回其他无关字段以节省长度。`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: JSON.stringify(generatedCourse),
         config: { systemInstruction, responseMimeType: "application/json", thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
       });
@@ -569,7 +594,7 @@ export default function AITaskGenerator({ courseId, onClose, onGenerated }: AITa
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: JSON.stringify(generatedCourse),
         config: { systemInstruction, responseMimeType: "application/json" }
       });

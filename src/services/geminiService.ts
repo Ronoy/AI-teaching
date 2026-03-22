@@ -7,7 +7,7 @@ import { getAITeamDashboardData } from "./aiTeamService";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export const generateAIResponse = async (
-  model: string = "gemini-3-flash-preview",
+  model: string = "gemini-3.1-pro-preview",
   systemInstruction: string,
   contents: any,
   responseMimeType: string = "text/plain"
@@ -162,7 +162,7 @@ export const evaluateConversation = async (
   }));
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.1-pro-preview",
     contents,
     config: {
       systemInstruction,
@@ -317,7 +317,7 @@ export const generateAssistantResponse = async (
   contents: any[]
 ): Promise<string> => {
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.1-pro-preview",
     contents,
     config: {
       systemInstruction,
@@ -364,7 +364,7 @@ export const generateAssistantResponse = async (
 
     // Send function responses back to Gemini
     const finalResponse = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-pro-preview",
       contents: [
         ...contents,
         { role: 'model', parts: response.candidates[0].content.parts },
@@ -409,7 +409,7 @@ export const recommendStepAttributes = async (
   const prompt = `任务描述: ${taskDescription}\n步骤名称: ${stepName}`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.1-pro-preview",
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
       systemInstruction,
